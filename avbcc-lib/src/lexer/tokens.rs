@@ -1,9 +1,11 @@
-#[derive(Debug, Copy, Clone)]
+use regex::Regex;
+
+#[derive(Debug, Clone)]
 pub struct Token {
     pub(crate) ty: TokenType,
 }
 
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Clone)]
 pub enum TokenType {
     Ident(String),
     Literal(String),
@@ -37,6 +39,12 @@ pub enum TokenType {
     RightBrkt,
     LeftCarat,
     RightCarat,
+}
+
+impl TokenType {
+    pub fn regex(&self) -> Regex {
+        todo!()
+    }
 }
 
 #[derive(Debug, Copy, Clone)]

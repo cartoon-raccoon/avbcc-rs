@@ -12,11 +12,15 @@ dependencies = [
 ]
 
 [[package]]
-name = "avbcc-rs"
+name = "avbcclib"
 version = "0.1.0"
 dependencies = [
  "regex",
 ]
+
+[[package]]
+name = "driver"
+version = "0.1.0"
 
 [[package]]
 name = "memchr"

@@ -1,5 +1,6 @@
 use std::iter::Iterator;
 
+pub mod tokens;
 pub use tokens::*;
 
 #[derive(Debug, Clone)]
@@ -12,7 +13,7 @@ impl Lexer {
     pub fn new(text: String) -> Self {
         Self {
             text,
-            position: Coordinate {0, 0}
+            position: Coordinate {line: 0, col: 0}
         }
     }
 
@@ -20,12 +21,16 @@ impl Lexer {
         self.text = text;
     }
 
+    pub fn next_token(&mut self) -> Option<Token> {
+        None
+    }
+
 }
 
 impl Iterator for Lexer {
     type Item = Token;
 
-    fn next(&mut self) -> Result<Option<Self::Item>> {
-        
+    fn next(&mut self) -> Option<Self::Item> {
+        self.next_token()
     }
 }

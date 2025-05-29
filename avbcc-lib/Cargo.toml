@@ -1,0 +1,11 @@
+[package]
+name = "avbcclib"
+version = "0.1.0"
+edition = "2024"
+
+[lib]
+name = "avbcclib"
+path = "src/lib.rs"
+
+[dependencies]
+regex = "1.11.1"
