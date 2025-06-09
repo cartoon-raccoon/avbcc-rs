@@ -9,3 +9,6 @@ path = "src/lib.rs"
 
 [dependencies]
 regex = "1.11.1"
+strum = "0.27"
+strum_macros = "0.27"
+thiserror = "2.0"
