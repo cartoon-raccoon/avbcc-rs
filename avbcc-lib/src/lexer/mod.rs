@@ -1,4 +1,3 @@
-use std::collections::HashMap;
 use std::iter::{FusedIterator, Iterator};
 
 use regex::Regex;
@@ -8,7 +7,10 @@ use thiserror::Error;
 pub mod tokens;
 pub use tokens::*;
 
-pub type LexerResult = Result<Option<Token>, LexerErr>;
+pub type LexerResult = Result<Token, LexerErr>;
+
+#[cfg(test)]
+mod tests;
 
 #[derive(Debug, Clone)]
 pub struct Lexer {
@@ -20,8 +22,8 @@ pub struct Lexer {
     charidx: usize,
     // the number of chars in the text
     charcount: usize,
-    // the map of regexes to match on
-    regexes: HashMap<TokenType, Regex>,
+    // the vec of regexes to match on, use vec to preserve order
+    regexes: Vec<(TokenType, Regex)>,
 }
 
 impl Lexer {
@@ -35,7 +37,7 @@ impl Lexer {
 
         Self {
             text: text.as_ref().into(),
-            pos: Coordinate::zero(),
+            pos: Coordinate::start(),
             charidx: 0,
             charcount: text.as_ref().chars().count(),
             regexes,
@@ -43,16 +45,16 @@ impl Lexer {
     }
 
     pub fn set_text<S: AsRef<str>>(&mut self, text: S) {
+        log::debug!("Setting Lexer text:\n{}", text.as_ref());
         self.text = text.as_ref().into();
     }
 
-    pub fn next_token(&mut self) -> LexerResult {
-        self.strip_whitespace();
-
+    pub fn next_token(&mut self) -> Option<LexerResult> {
         if self.charidx >= self.charcount {
             // all whitespace has been stripped and we have reached the end of the text
-            return Ok(None);
+            return None;
         }
+        self.strip_whitespace();
 
         let haystack = self
             .text
@@ -73,11 +75,22 @@ impl Lexer {
                         ty: TokenType::Constant(capture.as_str().into()),
                         start: self.pos,
                     }),
-                    TokenType::DoubleQuote(_) => self.parse_quotation()?,
+                    TokenType::DoubleQuote(_) => {
+                        match self.parse_quotation(true) {
+                            Ok(token) => Some(token),
+                            Err(e) => return Some(Err(e)),
+                        }
+                    }
+                    TokenType::SingleQuote(_) => {
+                        match self.parse_quotation(false) {
+                            Ok(token) => Some(token),
+                            Err(e) => return Some(Err(e)),
+                        }
+                    }
                     otherwise => {
                         // if the token is doubleable and it matches, use that instead
                         if let Some(dbl) = otherwise.double_token() {
-                            let dblregex = self.regexes.get(&dbl).unwrap();
+                            let dblregex = dbl.regex(); // fixme: this may be expensive
                             if dblregex.find(haystack).is_some() {
                                 ret = Some(Token {
                                     ty: dbl,
@@ -100,17 +113,37 @@ impl Lexer {
         if let Some(token) = ret {
             // remove lexed token from head of text
             self.update_state(&token);
-            Ok(Some(token))
+            Some(Ok(token))
         } else {
             let src = self.grab_until_whitespace();
             let span = Span::from_coord(self.pos, 0, src.chars().count());
-            Err(LexerErr { src, span })
+            Some(Err(LexerErr::UnknownToken { src, span }))
         }
     }
 
     fn strip_whitespace(&mut self) {
         // update charidx and position with the first non-whitespace char
-        todo!()
+        let chars = self.text.get(self.charidx..).unwrap().chars();
+
+        let mut curr_line = self.pos.line;
+        let mut curr_col = self.pos.col;
+        let mut charcnt = 0;
+        for c in chars {
+            if c.is_whitespace() {
+                curr_col += 1;
+                charcnt += 1;
+                if c == '\n' {
+                    curr_line += 1;
+                    curr_col = 1;
+                }
+            } else {
+                break
+            }
+        }
+
+        self.pos.line = curr_line;
+        self.pos.col = curr_col;
+        self.charidx += charcnt;
     }
 
     /// Updates the lexer's internal state, tracking the current position and charidx.
@@ -131,7 +164,7 @@ impl Lexer {
                     }
                 }
             }
-            // other should not contain newlines, so we can
+            // other should not contain newlines, so we can directly update
             other => {
                 self.pos.update_col_rel(Direction::Right, other.len());
             }
@@ -139,7 +172,25 @@ impl Lexer {
     }
 
     /// Parses a quotation and returns it without modifying the `Lexer`'s internal state.
-    fn parse_quotation(&self) -> LexerResult {
+    fn parse_quotation(&self, double: bool) -> LexerResult {
+        let quote = if double { '"' } else { '\'' } ;
+        let mut ret = String::new();
+
+        let mut chars = self.text.get(self.charidx..).unwrap().chars();
+
+        while let Some(c) = chars.next() {
+            if c == '\\' {
+                ret.push(c);
+                if let Some(nc) = chars.next() {
+                    ret.push(nc);
+                    continue
+                } else {
+                    return Err(LexerErr::UnfinishedQuote { quote, pos: self.pos })
+                }
+
+            }
+            ret.push(c)
+        }
         todo!()
     }
 
@@ -149,10 +200,11 @@ impl Lexer {
 }
 
 #[derive(Clone, Debug, Error)]
-#[error("{span} - encountered unknown token `{src}`")]
-pub struct LexerErr {
-    src: String,
-    span: Span,
+pub enum LexerErr {
+    #[error("{span} - encountered unknown token {src}")]
+    UnknownToken {src: String, span: Span},
+    #[error("{pos} - unfinished matching `{quote}`")]
+    UnfinishedQuote {quote: char, pos: Coordinate},
 }
 
 impl Iterator for Lexer {
@@ -160,9 +212,9 @@ impl Iterator for Lexer {
 
     fn next(&mut self) -> Option<Self::Item> {
         match self.next_token() {
-            Ok(None) => None,
-            Ok(valid) => Some(Ok(valid)),
-            Err(err) => Some(Err(err)),
+            None => None,
+            Some(Ok(valid)) => Some(Ok(valid)),
+            Some(Err(err)) => Some(Err(err)),
         }
     }
 }

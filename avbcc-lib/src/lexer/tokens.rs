@@ -9,14 +9,6 @@ pub struct Token {
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, AsRefStr, EnumIter, EnumIs, Display)]
 pub enum TokenType {
-    #[strum(to_string = "{0}")]
-    Ident(String),
-    #[strum(to_string = "{0}")]
-    Constant(String),
-    #[strum(to_string = "'{0}'")]
-    SingleQuote(String),
-    #[strum(to_string = "\"{0}\"")]
-    DoubleQuote(String),
 
     // keywords
     #[strum(serialize = "unsigned")]
@@ -141,6 +133,19 @@ pub enum TokenType {
     DblLeftCarat,
     #[strum(serialize = ">>")]
     DblRightCarat,
+
+    /*
+    variable tokens must be parsed last, since keywords can interfere with
+    correct matching
+    */
+    #[strum(to_string = "{0}")]
+    Ident(String),
+    #[strum(to_string = "{0}")]
+    Constant(String),
+    #[strum(to_string = "'{0}'")]
+    SingleQuote(String),
+    #[strum(to_string = "\"{0}\"")]
+    DoubleQuote(String),
 }
 
 #[allow(clippy::len_without_is_empty)]
@@ -215,8 +220,8 @@ impl TokenType {
 
             Self::LeftParen => "^\\(",
             Self::RightParen => "^\\)",
-            Self::LeftBrace => "^{",
-            Self::RightBrace => "^}",
+            Self::LeftBrace => "^\\{",
+            Self::RightBrace => "^\\}",
             Self::LeftBrkt => "^\\[",
             Self::RightBrkt => "^\\]",
             Self::LeftCarat => "^<",
@@ -279,9 +284,10 @@ pub struct Coordinate {
 }
 
 impl Coordinate {
-    /// Create a zeroed Coordinate (`line` and `col` set to 0).
-    pub fn zero() -> Self {
-        Self { line: 0, col: 0 }
+    /// Create a Coordinate pointing to the first column of the first line
+    /// (line and col both set to 1).
+    pub fn start() -> Self {
+        Self { line: 1, col: 1 }
     }
 
     /// Update the Coordinate's `line` relative to its current value.
