@@ -15,9 +15,11 @@ pub struct Lexer {
     // the string we need to tokenize
     text: String,
     // the current position on the text that the lexer is sitting at
-    position: Coordinate,
+    pos: Coordinate,
     // the linear position along the text
     charidx: usize,
+    // the number of chars in the text
+    charcount: usize,
     // the map of regexes to match on
     regexes: HashMap<TokenType, Regex>,
 }
@@ -33,8 +35,9 @@ impl Lexer {
 
         Self {
             text: text.as_ref().into(),
-            position: Coordinate::zero(),
+            pos: Coordinate::zero(),
             charidx: 0,
+            charcount: text.as_ref().chars().count(),
             regexes
         }
     }
@@ -45,10 +48,10 @@ impl Lexer {
 
 
     pub fn next_token(&mut self) -> LexerResult {
-        
+
         self.strip_whitespace();
 
-        if self.charidx >= self.text.len() {
+        if self.charidx >= self.charcount {
             // all whitespace has been stripped and we have reached the end of the text
             return Ok(None)
         }
@@ -64,13 +67,13 @@ impl Lexer {
                 ret = match token {
                     TokenType::Ident(_) => Some(Token {
                         ty: TokenType::Ident(capture.as_str().into()),
-                        start: self.position,
+                        start: self.pos,
                     }),
                     TokenType::Constant(_) => Some(Token {
                         ty: TokenType::Constant(capture.as_str().into()),
-                        start: self.position,
+                        start: self.pos,
                     }),
-                    TokenType::DoubleQuote => self.parse_quotation()?,
+                    TokenType::DoubleQuote(_) => self.parse_quotation()?,
                     otherwise => {
                         // if the token is doubleable and it matches, use that instead
                         if let Some(dbl) = otherwise.double_token() {
@@ -78,14 +81,14 @@ impl Lexer {
                             if let Some(_) = dblregex.find(haystack) {
                                 ret = Some(Token {
                                     ty: dbl,
-                                    start: self.position,
+                                    start: self.pos,
                                 });
                                 break
                             }
                         }
                         Some(Token {
                             ty: otherwise.clone(),
-                            start: self.position,
+                            start: self.pos,
                         })
                     }
                 };
@@ -96,11 +99,11 @@ impl Lexer {
         // by this point, if ret is None, we have an invalid token
         if let Some(token) = ret {
             // remove lexed token from head of text
-            self.strip_token(&token);
+            self.update_state(&token);
             Ok(Some(token))
         } else {
             let src = self.grab_until_whitespace();
-            let span = Span::from_coord(self.position, 0, src.len());
+            let span = Span::from_coord(self.pos, 0, src.chars().count());
             Err(LexerErr {src, span})
         }
     }
@@ -110,8 +113,29 @@ impl Lexer {
         todo!()
     }
 
-    fn strip_token(&mut self, token: &Token) {
-        todo!()
+    /// Updates the lexer's internal state, tracking the current position and charidx.
+    fn update_state(&mut self, token: &Token) {
+        // update charidx value
+        self.charidx += token.ty.len();
+        // update current position
+        match &token.ty {
+            TokenType::SingleQuote(s) | TokenType::DoubleQuote(s) => {
+                for c in s.chars() {
+                    if c == '\n' {
+                        // if the character is newline, reset col and increment line
+                        self.pos.line += 1;
+                        self.pos.col = 0;
+                    } else {
+                        // else, increment col
+                        self.pos.col += 1;
+                    }
+                }
+            },
+            // other should not contain newlines, so we can
+            other => {
+                self.pos.update_col_rel(Direction::Right, other.len());
+            }
+        }
     }
 
     /// Parses a quotation and returns it without modifying the `Lexer`'s internal state.

@@ -1,7 +1,5 @@
-use std::fmt::{Display};
-
 use regex::Regex;
-use strum_macros::{AsRefStr, EnumIter};
+use strum_macros::{AsRefStr, EnumIter, EnumIs, Display};
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Token {
@@ -9,10 +7,16 @@ pub struct Token {
     pub start: Coordinate,
 }
 
-#[derive(Debug, Clone, PartialEq, EnumIter, Eq, Hash, AsRefStr)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, AsRefStr, EnumIter, EnumIs, Display)]
 pub enum TokenType {
+    #[strum(to_string="{0}")]
     Ident(String),
+    #[strum(to_string="{0}")]
     Constant(String),
+    #[strum(to_string="'{0}'")]
+    SingleQuote(String),
+    #[strum(to_string="\"{0}\"")]
+    DoubleQuote(String),
 
     // keywords
     #[strum(serialize="unsigned")]
@@ -98,7 +102,7 @@ pub enum TokenType {
     DblPlus,
     #[strum(serialize="-")]
     Dash,
-    #[strum(serialize="+--")]
+    #[strum(serialize="--")]
     DblDash,
     #[strum(serialize="/")]
     Slash,
@@ -117,18 +121,13 @@ pub enum TokenType {
     #[strum(serialize="==")]
     DblEquals,
 
-    #[strum(serialize="'")]
-    SingleQuote,
-    #[strum(serialize="\"")]
-    DoubleQuote,
-
     #[strum(serialize="(")]
     LeftParen,
     #[strum(serialize=")")]
     RightParen,
-    #[strum(serialize="{")]
+    #[strum(serialize="{{")]
     LeftBrace,
-    #[strum(serialize="}")]
+    #[strum(serialize="}}")]
     RightBrace,
     #[strum(serialize="[")]
     LeftBrkt,
@@ -145,10 +144,19 @@ pub enum TokenType {
 }
 
 impl TokenType {
+    /// Returns a Regex that parses the TokenType.
+    /// 
+    /// The returned regex matches a token appearing at the beginning of the haystack.
+    /// It will not match any tokens further down in the string.
+    /// 
+    /// ## Parsing quotations
+    /// Quotations such as string and char literals cannot be easily parsed with a
+    /// regular expression. As such, the regex returned on such tokens only detects the
+    /// actual quotation mark, `"` or `'`.
     pub fn regex(&self) -> Regex {
         let s = match self {
-            Self::Ident(_) => "^[a-zA-Z_]\\w*\\b",
-            Self::Constant(_) => "^[0-9]+\\b",
+            Self::Ident(_) => "^[a-zA-Z_][a-zA-Z0-9_]*\\b",
+            Self::Constant(_) => "^[0-9\\.]+\\b|^0x[0-9a-f]+\\b|^0b[0-1]+\\b",
             
             Self::Unsigned => "^unsigned\\b",
             Self::Signed => "^signed\\b",
@@ -201,8 +209,8 @@ impl TokenType {
             Self::Equals => "^=",
             Self::DblEquals => "^==",
 
-            Self::SingleQuote => "^'",
-            Self::DoubleQuote => "^\"",
+            Self::SingleQuote(_) => "^'",
+            Self::DoubleQuote(_) => "^\"",
 
             Self::LeftParen => "^\\(",
             Self::RightParen => "^\\)",
@@ -217,6 +225,17 @@ impl TokenType {
         };
 
         Regex::new(s).unwrap()
+    }
+
+    /// Returns the length of the token, in characters, *not* bytes.
+    pub fn len(&self) -> usize {
+        // all variable tokens use char count, since len() returns byte length
+        match self {
+            Self::Ident(s) | Self::Constant(s) => s.chars().count(),
+            Self::SingleQuote(s) | Self::DoubleQuote(s) => s.chars().count() + 2,
+            // all non-variable tokens are valid ascii, so their byte length always equals char length
+            otherwise => otherwise.as_ref().len()
+        }
     }
 
     /// Returns the double version of the token, if such a token exists.
@@ -238,19 +257,6 @@ impl TokenType {
             Self::LeftCarat  => Some(Self::DblLeftCarat),
             Self::RightCarat => Some(Self::DblRightCarat),
             _                => None
-        }
-    }
-}
-
-impl Display for TokenType {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
-        match self {
-            Self::Ident(s) | Self::Constant(s) => {
-                write!(f, "{}", s)
-            },
-            other => {
-                write!(f, "{}", other.as_ref())
-            }
         }
     }
 }
@@ -302,7 +308,7 @@ impl Coordinate {
     }
 }
 
-impl Display for Coordinate{
+impl std::fmt::Display for Coordinate{
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
         write!(f, "{}:{}", self.line, self.col)
     }
@@ -325,12 +331,45 @@ impl Span {
     }
 }
 
-impl Display for Span {
+impl std::fmt::Display for Span {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
         if self.start.line == self.end.line {
             write!(f, "{}:{}-{}", self.start.line, self.start.col, self.end.col)
         } else {
             write!(f, "{}-{}", self.start, self.end)
         }
+    }
+}
+
+#[cfg(test)]
+pub mod test {
+    use super::*;
+
+    #[test]
+    fn check_ident_token_serialization() {
+        let ident = TokenType::Ident(String::from("hello"));
+        assert_eq!(ident.to_string(), String::from("hello"));
+        assert_eq!(ident.len(), 5);
+    }
+
+    #[test]
+    fn check_const_token_serialization() {
+        let constant = TokenType::Constant(String::from("34823"));
+        assert_eq!(constant.to_string(), String::from("34823"));
+        assert_eq!(constant.len(), 5);
+    }
+
+    #[test]
+    fn check_quotation_token_serialization() {
+        let quotation = TokenType::DoubleQuote(String::from("hello"));
+        assert_eq!(quotation.to_string(), String::from("\"hello\""));
+        assert_eq!(quotation.len(), 7);
+    }
+
+    #[test]
+    fn check_nonvariable_token_serialization() {
+        let dblplus = TokenType::DblPlus;
+        assert_eq!(dblplus.to_string(), String::from("++"));
+        assert_eq!(dblplus.len(), 2);
     }
 }
