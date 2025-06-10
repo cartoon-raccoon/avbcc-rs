@@ -1,5 +1,5 @@
 use regex::Regex;
-use strum_macros::{AsRefStr, EnumIter, EnumIs, Display};
+use strum_macros::{AsRefStr, Display, EnumIs, EnumIter};
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Token {
@@ -9,146 +9,147 @@ pub struct Token {
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, AsRefStr, EnumIter, EnumIs, Display)]
 pub enum TokenType {
-    #[strum(to_string="{0}")]
+    #[strum(to_string = "{0}")]
     Ident(String),
-    #[strum(to_string="{0}")]
+    #[strum(to_string = "{0}")]
     Constant(String),
-    #[strum(to_string="'{0}'")]
+    #[strum(to_string = "'{0}'")]
     SingleQuote(String),
-    #[strum(to_string="\"{0}\"")]
+    #[strum(to_string = "\"{0}\"")]
     DoubleQuote(String),
 
     // keywords
-    #[strum(serialize="unsigned")]
+    #[strum(serialize = "unsigned")]
     Unsigned,
-    #[strum(serialize="signed")]
+    #[strum(serialize = "signed")]
     Signed,
-    #[strum(serialize="char")]
+    #[strum(serialize = "char")]
     KWChar,
-    #[strum(serialize="short")]
+    #[strum(serialize = "short")]
     KWShort,
-    #[strum(serialize="int")]
-    KWInt,  // int
-    #[strum(serialize="long")]
+    #[strum(serialize = "int")]
+    KWInt,
+    #[strum(serialize = "long")]
     KWLong,
-    #[strum(serialize="float")]
+    #[strum(serialize = "float")]
     KWFloat,
-    #[strum(serialize="double")]
+    #[strum(serialize = "double")]
     KWDouble,
-    #[strum(serialize="_Bool")]
+    #[strum(serialize = "_Bool")]
     KWBool,
-    #[strum(serialize="struct")]
+    #[strum(serialize = "struct")]
     Struct,
-    #[strum(serialize="enum")]
+    #[strum(serialize = "enum")]
     Enum,
-    #[strum(serialize="union")]
+    #[strum(serialize = "union")]
     Union,
-    #[strum(serialize="static")]
+    #[strum(serialize = "static")]
     Static,
-    #[strum(serialize="extern")]
+    #[strum(serialize = "extern")]
     Extern,
-    #[strum(serialize="typedef")]
+    #[strum(serialize = "typedef")]
     Typedef,
-    #[strum(serialize="void")]
+    #[strum(serialize = "void")]
     Void,
-    #[strum(serialize="const")]
+    #[strum(serialize = "const")]
     Const,
     //True,
     //False,
 
     // control-flow tokens
-    #[strum(serialize="if")]
+    #[strum(serialize = "if")]
     If,
-    #[strum(serialize="else")]
+    #[strum(serialize = "else")]
     Else,
-    #[strum(serialize="switch")]
+    #[strum(serialize = "switch")]
     Switch,
-    #[strum(serialize="case")]
+    #[strum(serialize = "case")]
     Case,
-    #[strum(serialize="default")]
+    #[strum(serialize = "default")]
     Default,
-    #[strum(serialize="goto")]
+    #[strum(serialize = "goto")]
     Goto,
-    #[strum(serialize="do")]
+    #[strum(serialize = "do")]
     Do,
-    #[strum(serialize="for")]
+    #[strum(serialize = "for")]
     For,
-    #[strum(serialize="while")]
+    #[strum(serialize = "while")]
     While,
-    #[strum(serialize="continue")]
+    #[strum(serialize = "continue")]
     Continue,
-    #[strum(serialize="break")]
+    #[strum(serialize = "break")]
     Break,
-    #[strum(serialize="return")]
+    #[strum(serialize = "return")]
     Return,
 
-    #[strum(serialize=",")]
+    #[strum(serialize = ",")]
     Comma,
-    #[strum(serialize=";")]
+    #[strum(serialize = ";")]
     Semicolon,
-    #[strum(serialize=":")]
+    #[strum(serialize = ":")]
     Colon,
-    #[strum(serialize="!")]
+    #[strum(serialize = "!")]
     Bang,
 
     // double-able tokens
-    #[strum(serialize="*")]
+    #[strum(serialize = "*")]
     Star,
-    #[strum(serialize="**")]
+    #[strum(serialize = "**")]
     DblStar,
-    #[strum(serialize="+")]
+    #[strum(serialize = "+")]
     Plus,
-    #[strum(serialize="++")]
+    #[strum(serialize = "++")]
     DblPlus,
-    #[strum(serialize="-")]
+    #[strum(serialize = "-")]
     Dash,
-    #[strum(serialize="--")]
+    #[strum(serialize = "--")]
     DblDash,
-    #[strum(serialize="/")]
+    #[strum(serialize = "/")]
     Slash,
-    #[strum(serialize="//")]
+    #[strum(serialize = "//")]
     DblSlash,
-    #[strum(serialize="&")]
+    #[strum(serialize = "&")]
     Ampersand,
-    #[strum(serialize="&&")]
+    #[strum(serialize = "&&")]
     DblAmpersand,
-    #[strum(serialize="|")]
+    #[strum(serialize = "|")]
     Pipe,
-    #[strum(serialize="||")]
+    #[strum(serialize = "||")]
     DblPipe,
-    #[strum(serialize="=")]
+    #[strum(serialize = "=")]
     Equals,
-    #[strum(serialize="==")]
+    #[strum(serialize = "==")]
     DblEquals,
 
-    #[strum(serialize="(")]
+    #[strum(serialize = "(")]
     LeftParen,
-    #[strum(serialize=")")]
+    #[strum(serialize = ")")]
     RightParen,
-    #[strum(serialize="{{")]
+    #[strum(serialize = "{{")]
     LeftBrace,
-    #[strum(serialize="}}")]
+    #[strum(serialize = "}}")]
     RightBrace,
-    #[strum(serialize="[")]
+    #[strum(serialize = "[")]
     LeftBrkt,
-    #[strum(serialize="]")]
+    #[strum(serialize = "]")]
     RightBrkt,
-    #[strum(serialize="<")]
+    #[strum(serialize = "<")]
     LeftCarat,
-    #[strum(serialize=">")]
+    #[strum(serialize = ">")]
     RightCarat,
-    #[strum(serialize="<<")]
+    #[strum(serialize = "<<")]
     DblLeftCarat,
-    #[strum(serialize=">>")]
+    #[strum(serialize = ">>")]
     DblRightCarat,
 }
 
+#[allow(clippy::len_without_is_empty)]
 impl TokenType {
     /// Returns a Regex that parses the TokenType.
-    /// 
+    ///
     /// The returned regex matches a token appearing at the beginning of the haystack.
     /// It will not match any tokens further down in the string.
-    /// 
+    ///
     /// ## Parsing quotations
     /// Quotations such as string and char literals cannot be easily parsed with a
     /// regular expression. As such, the regex returned on such tokens only detects the
@@ -157,7 +158,7 @@ impl TokenType {
         let s = match self {
             Self::Ident(_) => "^[a-zA-Z_][a-zA-Z0-9_]*\\b",
             Self::Constant(_) => "^[0-9\\.]+\\b|^0x[0-9a-f]+\\b|^0b[0-1]+\\b",
-            
+
             Self::Unsigned => "^unsigned\\b",
             Self::Signed => "^signed\\b",
             Self::KWChar => "^char\\b",
@@ -175,7 +176,7 @@ impl TokenType {
             Self::Typedef => "^typedef\\b",
             Self::Void => "^void\\b",
             Self::Const => "^const\\b",
-            
+
             Self::If => "^if\\b",
             Self::Else => "^else\\b",
             Self::Switch => "^switch\\b",
@@ -192,7 +193,7 @@ impl TokenType {
             Self::Comma => "^,",
             Self::Semicolon => "^;",
             Self::Colon => "^:",
-            Self::Bang=>"^!",
+            Self::Bang => "^!",
 
             Self::Star => "^\\*",
             Self::DblStar => "^\\*\\*",
@@ -234,29 +235,29 @@ impl TokenType {
             Self::Ident(s) | Self::Constant(s) => s.chars().count(),
             Self::SingleQuote(s) | Self::DoubleQuote(s) => s.chars().count() + 2,
             // all non-variable tokens are valid ascii, so their byte length always equals char length
-            otherwise => otherwise.as_ref().len()
+            otherwise => otherwise.as_ref().len(),
         }
     }
 
     /// Returns the double version of the token, if such a token exists.
     /// If no such double version exists, returns `None`.
-    /// 
+    ///
     /// NOTE: `TokenType::SingleQuote` is not considered a double quote, as
     /// it is a separate Unicode codepoint from `"`, not a double-up of `'`.
     /// As such, calling `double_up` on `TokenType::SingleQuote` will return
     /// `None`.
     pub fn double_token(&self) -> Option<Self> {
         match self {
-            Self::Star       => Some(Self::DblStar),
-            Self::Plus       => Some(Self::DblPlus),
-            Self::Dash       => Some(Self::DblDash),
-            Self::Slash      => Some(Self::DblSlash),
-            Self::Ampersand  => Some(Self::DblAmpersand),
-            Self::Pipe       => Some(Self::DblPipe),
-            Self::Equals     => Some(Self::DblEquals),
-            Self::LeftCarat  => Some(Self::DblLeftCarat),
+            Self::Star => Some(Self::DblStar),
+            Self::Plus => Some(Self::DblPlus),
+            Self::Dash => Some(Self::DblDash),
+            Self::Slash => Some(Self::DblSlash),
+            Self::Ampersand => Some(Self::DblAmpersand),
+            Self::Pipe => Some(Self::DblPipe),
+            Self::Equals => Some(Self::DblEquals),
+            Self::LeftCarat => Some(Self::DblLeftCarat),
             Self::RightCarat => Some(Self::DblRightCarat),
-            _                => None
+            _ => None,
         }
     }
 }
@@ -280,7 +281,7 @@ pub struct Coordinate {
 impl Coordinate {
     /// Create a zeroed Coordinate (`line` and `col` set to 0).
     pub fn zero() -> Self {
-        Self {line: 0, col: 0}
+        Self { line: 0, col: 0 }
     }
 
     /// Update the Coordinate's `line` relative to its current value.
@@ -308,7 +309,7 @@ impl Coordinate {
     }
 }
 
-impl std::fmt::Display for Coordinate{
+impl std::fmt::Display for Coordinate {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
         write!(f, "{}:{}", self.line, self.col)
     }
@@ -327,7 +328,7 @@ impl Span {
             col: start.col + delta_col,
         };
 
-        Self {start, end}
+        Self { start, end }
     }
 }
 

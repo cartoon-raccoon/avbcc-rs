@@ -1,8 +1,8 @@
-use std::iter::{FusedIterator, Iterator};
 use std::collections::HashMap;
+use std::iter::{FusedIterator, Iterator};
 
-use strum::IntoEnumIterator;
 use regex::Regex;
+use strum::IntoEnumIterator;
 use thiserror::Error;
 
 pub mod tokens;
@@ -38,7 +38,7 @@ impl Lexer {
             pos: Coordinate::zero(),
             charidx: 0,
             charcount: text.as_ref().chars().count(),
-            regexes
+            regexes,
         }
     }
 
@@ -46,17 +46,17 @@ impl Lexer {
         self.text = text.as_ref().into();
     }
 
-
     pub fn next_token(&mut self) -> LexerResult {
-
         self.strip_whitespace();
 
         if self.charidx >= self.charcount {
             // all whitespace has been stripped and we have reached the end of the text
-            return Ok(None)
+            return Ok(None);
         }
 
-        let haystack = self.text.get(self.charidx..)
+        let haystack = self
+            .text
+            .get(self.charidx..)
             .expect("unable to split along valid codepoint");
 
         let mut ret: Option<Token> = None;
@@ -78,12 +78,12 @@ impl Lexer {
                         // if the token is doubleable and it matches, use that instead
                         if let Some(dbl) = otherwise.double_token() {
                             let dblregex = self.regexes.get(&dbl).unwrap();
-                            if let Some(_) = dblregex.find(haystack) {
+                            if dblregex.find(haystack).is_some() {
                                 ret = Some(Token {
                                     ty: dbl,
                                     start: self.pos,
                                 });
-                                break
+                                break;
                             }
                         }
                         Some(Token {
@@ -92,7 +92,7 @@ impl Lexer {
                         })
                     }
                 };
-                break
+                break;
             }
         }
 
@@ -104,7 +104,7 @@ impl Lexer {
         } else {
             let src = self.grab_until_whitespace();
             let span = Span::from_coord(self.pos, 0, src.chars().count());
-            Err(LexerErr {src, span})
+            Err(LexerErr { src, span })
         }
     }
 
@@ -130,7 +130,7 @@ impl Lexer {
                         self.pos.col += 1;
                     }
                 }
-            },
+            }
             // other should not contain newlines, so we can
             other => {
                 self.pos.update_col_rel(Direction::Right, other.len());
@@ -162,7 +162,7 @@ impl Iterator for Lexer {
         match self.next_token() {
             Ok(None) => None,
             Ok(valid) => Some(Ok(valid)),
-            Err(err) => Some(Err(err))
+            Err(err) => Some(Err(err)),
         }
     }
 }

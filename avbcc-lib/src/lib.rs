@@ -7,9 +7,6 @@ pub mod reexports {
 
 use lexer::LexerErr;
 
-
 pub enum AvbccErr {
-    LexerErr(LexerErr)
+    LexerErr(LexerErr),
 }
-
-
