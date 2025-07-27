@@ -1,154 +1,160 @@
+use std::fmt::Debug;
+use std::convert::AsRef;
+use std::any::Any;
+
 use regex::Regex;
-use strum_macros::{AsRefStr, Display, EnumIs, EnumIter};
+use strum_macros::{AsRefStr, Display, EnumIs, EnumIter, EnumProperty};
+use strum::{EnumProperty};
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Token {
     pub ty: TokenType,
     pub start: Coordinate,
+    //pub srcfile: String,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash, AsRefStr, EnumIter, EnumIs, Display)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, AsRefStr, EnumIter, EnumIs, EnumProperty, Display)]
 pub enum TokenType {
-
-    // keywords
-    #[strum(serialize = "unsigned")]
+    #[strum(serialize = "unsigned", props(regex = "^unsigned\\b"))]
     Unsigned,
-    #[strum(serialize = "signed")]
+    #[strum(serialize = "signed", props(regex = "^signed\\b"))]
     Signed,
-    #[strum(serialize = "char")]
+    #[strum(serialize = "char", props(regex = "^char\\b"))]
     KWChar,
-    #[strum(serialize = "short")]
+    #[strum(serialize = "short", props(regex = "^short\\b"))]
     KWShort,
-    #[strum(serialize = "int")]
+    #[strum(serialize = "int", props(regex = "^int\\b"))]
     KWInt,
-    #[strum(serialize = "long")]
+    #[strum(serialize = "long", props(regex = "^long\\b"))]
     KWLong,
-    #[strum(serialize = "float")]
+    #[strum(serialize = "float", props(regex = "^float\\b"))]
     KWFloat,
-    #[strum(serialize = "double")]
+    #[strum(serialize = "double", props(regex = "^double\\b"))]
     KWDouble,
-    #[strum(serialize = "_Bool")]
+    #[strum(serialize = "_Bool", props(regex = "^_Bool"))]
     KWBool,
-    #[strum(serialize = "struct")]
+    #[strum(serialize = "struct", props(regex = "^struct\\b"))]
     Struct,
-    #[strum(serialize = "enum")]
+    #[strum(serialize = "enum", props(regex = "^enum\\b"))]
     Enum,
-    #[strum(serialize = "union")]
+    #[strum(serialize = "union", props(regex = "^union\\b"))]
     Union,
-    #[strum(serialize = "static")]
+    #[strum(serialize = "static", props(regex = "^static\\b"))]
     Static,
-    #[strum(serialize = "extern")]
+    #[strum(serialize = "extern", props(regex = "^extern\\b"))]
     Extern,
-    #[strum(serialize = "typedef")]
+    #[strum(serialize = "typedef", props(regex = "^typedef\\b"))]
     Typedef,
-    #[strum(serialize = "void")]
+    #[strum(serialize = "void", props(regex = "^void\\b"))]
     Void,
-    #[strum(serialize = "const")]
+    #[strum(serialize = "const", props(regex = "^const\\b"))]
     Const,
     //True,
     //False,
 
     // control-flow tokens
-    #[strum(serialize = "if")]
+    #[strum(serialize = "if", props(regex = "^if\\b"))]
     If,
-    #[strum(serialize = "else")]
+    #[strum(serialize = "else", props(regex = "^else\\b"))]
     Else,
-    #[strum(serialize = "switch")]
+    #[strum(serialize = "switch", props(regex = "^switch\\b"))]
     Switch,
-    #[strum(serialize = "case")]
+    #[strum(serialize = "case", props(regex = "^case\\b"))]
     Case,
-    #[strum(serialize = "default")]
+    #[strum(serialize = "default", props(regex = "^default\\b"))]
     Default,
-    #[strum(serialize = "goto")]
+    #[strum(serialize = "goto", props(regex = "^goto\\b"))]
     Goto,
-    #[strum(serialize = "do")]
+    #[strum(serialize = "do", props(regex = "^do\\b"))]
     Do,
-    #[strum(serialize = "for")]
+    #[strum(serialize = "for", props(regex = "^for\\b"))]
     For,
-    #[strum(serialize = "while")]
+    #[strum(serialize = "while", props(regex = "^while\\b"))]
     While,
-    #[strum(serialize = "continue")]
+    #[strum(serialize = "continue", props(regex = "^continue\\b"))]
     Continue,
-    #[strum(serialize = "break")]
+    #[strum(serialize = "break", props(regex = "^break\\b"))]
     Break,
-    #[strum(serialize = "return")]
+    #[strum(serialize = "return", props(regex = "^return\\b"))]
     Return,
 
-    #[strum(serialize = ",")]
+    #[strum(serialize = "**", props(regex = "^\\*\\*"))]
+    DblStar,
+    #[strum(serialize = "++", props(regex = "^\\+\\+"))]
+    DblPlus,
+    #[strum(serialize = "--", props(regex = "^--"))]
+    DblDash,
+    #[strum(serialize = "->", props(regex = "^->"))]
+    Arrow,
+    #[strum(serialize = "//", props(regex = "^\\/\\/"))]
+    DblSlash,
+    #[strum(serialize = "&&", props(regex = "^&&"))]
+    DblAmpersand,
+    #[strum(serialize = "||", props(regex = "^\\|\\|"))]
+    DblPipe,
+    #[strum(serialize = "==", props(regex = "^=="))]
+    DblEquals,
+    #[strum(serialize = "<<", props(regex = "^<<"))]
+    DblLeftCarat,
+    #[strum(serialize = ">>", props(regex = "^>>"))]
+    DblRightCarat,
+
+    #[strum(serialize = ",", props(regex = "^,"))]
     Comma,
-    #[strum(serialize = ";")]
+    #[strum(serialize = ";", props(regex = "^;"))]
     Semicolon,
-    #[strum(serialize = ":")]
+    #[strum(serialize = ":", props(regex = "^:"))]
     Colon,
-    #[strum(serialize = "!")]
+    #[strum(serialize = "!", props(regex = "^!"))]
     Bang,
 
     // double-able tokens
-    #[strum(serialize = "*")]
+    /* place double variants before single variants,
+    so if matching on them fails we fall back on the single variant */
+    
+    #[strum(serialize = "*", props(regex = "^\\*"))]
     Star,
-    #[strum(serialize = "**")]
-    DblStar,
-    #[strum(serialize = "+")]
+    #[strum(serialize = "+", props(regex = "^\\+"))]
     Plus,
-    #[strum(serialize = "++")]
-    DblPlus,
-    #[strum(serialize = "-")]
+    #[strum(serialize = "-", props(regex = "^-"))]
     Dash,
-    #[strum(serialize = "--")]
-    DblDash,
-    #[strum(serialize = "/")]
+    #[strum(serialize = "/", props(regex = "^\\/"))]
     Slash,
-    #[strum(serialize = "//")]
-    DblSlash,
-    #[strum(serialize = "&")]
+    #[strum(serialize = "&", props(regex = "^&"))]
     Ampersand,
-    #[strum(serialize = "&&")]
-    DblAmpersand,
-    #[strum(serialize = "|")]
+    #[strum(serialize = "|", props(regex = "^\\|"))]
     Pipe,
-    #[strum(serialize = "||")]
-    DblPipe,
-    #[strum(serialize = "=")]
+    #[strum(serialize = "=", props(regex = "^="))]
     Equals,
-    #[strum(serialize = "==")]
-    DblEquals,
 
-    #[strum(serialize = "(")]
+    #[strum(serialize = "(", props(regex = "^\\("))]
     LeftParen,
-    #[strum(serialize = ")")]
+    #[strum(serialize = ")", props(regex = "^\\)"))]
     RightParen,
-    #[strum(serialize = "{{")]
+    #[strum(serialize = "{{", props(regex = "^\\{"))]
     LeftBrace,
-    #[strum(serialize = "}}")]
+    #[strum(serialize = "}}", props(regex = "^\\}"))]
     RightBrace,
-    #[strum(serialize = "[")]
+    #[strum(serialize = "[", props(regex = "^\\["))]
     LeftBrkt,
-    #[strum(serialize = "]")]
+    #[strum(serialize = "]", props(regex = "^\\]"))]
     RightBrkt,
-    #[strum(serialize = "<")]
+    #[strum(serialize = "<", props(regex = "^<"))]
     LeftCarat,
-    #[strum(serialize = ">")]
+    #[strum(serialize = ">", props(regex = "^>"))]
     RightCarat,
-    #[strum(serialize = "<<")]
-    DblLeftCarat,
-    #[strum(serialize = ">>")]
-    DblRightCarat,
 
-    /*
-    variable tokens must be parsed last, since keywords can interfere with
-    correct matching
-    */
-    #[strum(to_string = "{0}")]
-    Ident(String),
-    #[strum(to_string = "{0}")]
-    Constant(String),
-    #[strum(to_string = "'{0}'")]
+    #[strum(to_string = "'{0}'", props(regex = "^'"))]
     SingleQuote(String),
-    #[strum(to_string = "\"{0}\"")]
+    #[strum(to_string = "\"{0}\"", props(regex = "^\""))]
     DoubleQuote(String),
+
+    #[strum(to_string = "{0}", props(regex = "^[a-zA-Z_][a-zA-Z0-9_]*\\b"))]
+    Ident(String),
+    #[strum(to_string = "{0}", props(regex = "^[0-9\\.]+\\b|^0x[0-9a-f]+\\b|^0b[0-1]+\\b"))]
+    Constant(String),
 }
 
-#[allow(clippy::len_without_is_empty)]
 impl TokenType {
     /// Returns a Regex that parses the TokenType.
     ///
@@ -160,109 +166,17 @@ impl TokenType {
     /// regular expression. As such, the regex returned on such tokens only detects the
     /// actual quotation mark, `"` or `'`.
     pub fn regex(&self) -> Regex {
-        let s = match self {
-            Self::Ident(_) => "^[a-zA-Z_][a-zA-Z0-9_]*\\b",
-            Self::Constant(_) => "^[0-9\\.]+\\b|^0x[0-9a-f]+\\b|^0b[0-1]+\\b",
-
-            Self::Unsigned => "^unsigned\\b",
-            Self::Signed => "^signed\\b",
-            Self::KWChar => "^char\\b",
-            Self::KWShort => "^short\\b",
-            Self::KWInt => "^int\\b",
-            Self::KWLong => "^long\\b",
-            Self::KWFloat => "^float\\b",
-            Self::KWDouble => "^double\\b",
-            Self::KWBool => "^_Bool",
-            Self::Struct => "^struct\\b",
-            Self::Enum => "^enum\\b",
-            Self::Union => "^union\\b",
-            Self::Static => "^static\\b",
-            Self::Extern => "^extern\\b",
-            Self::Typedef => "^typedef\\b",
-            Self::Void => "^void\\b",
-            Self::Const => "^const\\b",
-
-            Self::If => "^if\\b",
-            Self::Else => "^else\\b",
-            Self::Switch => "^switch\\b",
-            Self::Case => "^case\\b",
-            Self::Default => "^default\\b",
-            Self::Goto => "^goto\\b",
-            Self::Do => "^do\\b",
-            Self::For => "^for\\b",
-            Self::While => "^while\\b",
-            Self::Continue => "^continue\\b",
-            Self::Break => "^break\\b",
-            Self::Return => "^return\\b",
-
-            Self::Comma => "^,",
-            Self::Semicolon => "^;",
-            Self::Colon => "^:",
-            Self::Bang => "^!",
-
-            Self::Star => "^\\*",
-            Self::DblStar => "^\\*\\*",
-            Self::Plus => "^\\+",
-            Self::DblPlus => "^\\+\\+",
-            Self::Dash => "^-",
-            Self::DblDash => "^--",
-            Self::Slash => "^\\/",
-            Self::DblSlash => "^\\/\\/",
-            Self::Pipe => "^\\|",
-            Self::DblPipe => "^\\|\\|",
-            Self::Ampersand => "^&",
-            Self::DblAmpersand => "^&&",
-            Self::Equals => "^=",
-            Self::DblEquals => "^==",
-
-            Self::SingleQuote(_) => "^'",
-            Self::DoubleQuote(_) => "^\"",
-
-            Self::LeftParen => "^\\(",
-            Self::RightParen => "^\\)",
-            Self::LeftBrace => "^\\{",
-            Self::RightBrace => "^\\}",
-            Self::LeftBrkt => "^\\[",
-            Self::RightBrkt => "^\\]",
-            Self::LeftCarat => "^<",
-            Self::DblLeftCarat => "^<<",
-            Self::RightCarat => "^>",
-            Self::DblRightCarat => "^>>",
-        };
+        let s = self.get_str("regex").expect("unable to get regex for token");
 
         Regex::new(s).unwrap()
     }
 
     /// Returns the length of the token, in characters, *not* bytes.
     pub fn len(&self) -> usize {
-        // all variable tokens use char count, since len() returns byte length
         match self {
-            Self::Ident(s) | Self::Constant(s) => s.chars().count(),
-            Self::SingleQuote(s) | Self::DoubleQuote(s) => s.chars().count() + 2,
-            // all non-variable tokens are valid ascii, so their byte length always equals char length
-            otherwise => otherwise.as_ref().len(),
-        }
-    }
-
-    /// Returns the double version of the token, if such a token exists.
-    /// If no such double version exists, returns `None`.
-    ///
-    /// NOTE: `TokenType::SingleQuote` is not considered a double quote, as
-    /// it is a separate Unicode codepoint from `"`, not a double-up of `'`.
-    /// As such, calling `double_up` on `TokenType::SingleQuote` will return
-    /// `None`.
-    pub fn double_token(&self) -> Option<Self> {
-        match self {
-            Self::Star => Some(Self::DblStar),
-            Self::Plus => Some(Self::DblPlus),
-            Self::Dash => Some(Self::DblDash),
-            Self::Slash => Some(Self::DblSlash),
-            Self::Ampersand => Some(Self::DblAmpersand),
-            Self::Pipe => Some(Self::DblPipe),
-            Self::Equals => Some(Self::DblEquals),
-            Self::LeftCarat => Some(Self::DblLeftCarat),
-            Self::RightCarat => Some(Self::DblRightCarat),
-            _ => None,
+            TokenType::SingleQuote(s) | TokenType::DoubleQuote(s) => s.len() + 2,
+            TokenType::Ident(s) | TokenType::Constant(s) => s.len(),
+            otherwise => otherwise.as_ref().len()
         }
     }
 }

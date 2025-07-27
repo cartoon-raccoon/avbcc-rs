@@ -1,8 +1,8 @@
-use std::iter::{FusedIterator, Iterator};
+use std::{collections::HashMap, iter::{FusedIterator, Iterator}};
 
 use regex::Regex;
-use strum::IntoEnumIterator;
 use thiserror::Error;
+use strum::IntoEnumIterator;
 
 pub mod tokens;
 pub use tokens::*;
@@ -12,7 +12,7 @@ pub type LexerResult = Result<Token, LexerErr>;
 #[cfg(test)]
 mod tests;
 
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct Lexer {
     // the string we need to tokenize
     text: String,
@@ -22,16 +22,17 @@ pub struct Lexer {
     charidx: usize,
     // the number of chars in the text
     charcount: usize,
-    // the vec of regexes to match on, use vec to preserve order
+    // the keywords and their associated regexes
     regexes: Vec<(TokenType, Regex)>,
+
 }
 
 impl Lexer {
     pub fn new<S: AsRef<str>>(text: S) -> Self {
         let regexes = TokenType::iter()
-            .map(|tty| {
-                let r = tty.regex();
-                (tty, r)
+            .map(|token| {
+                let regex = token.regex();
+                (token, regex)
             })
             .collect();
 
@@ -40,7 +41,7 @@ impl Lexer {
             pos: Coordinate::start(),
             charidx: 0,
             charcount: text.as_ref().chars().count(),
-            regexes,
+            regexes
         }
     }
 
@@ -61,53 +62,12 @@ impl Lexer {
             .get(self.charidx..)
             .expect("unable to split along valid codepoint");
 
-        let mut ret: Option<Token> = None;
+        let ret = self.parse_single(haystack);
+
+        
 
         // for each of our tokens, test if its regex matches the haystack
-        for (token, regex) in self.regexes.iter() {
-            if let Some(capture) = regex.find(haystack) {
-                ret = match token {
-                    TokenType::Ident(_) => Some(Token {
-                        ty: TokenType::Ident(capture.as_str().into()),
-                        start: self.pos,
-                    }),
-                    TokenType::Constant(_) => Some(Token {
-                        ty: TokenType::Constant(capture.as_str().into()),
-                        start: self.pos,
-                    }),
-                    TokenType::DoubleQuote(_) => {
-                        match self.parse_quotation(true) {
-                            Ok(token) => Some(token),
-                            Err(e) => return Some(Err(e)),
-                        }
-                    }
-                    TokenType::SingleQuote(_) => {
-                        match self.parse_quotation(false) {
-                            Ok(token) => Some(token),
-                            Err(e) => return Some(Err(e)),
-                        }
-                    }
-                    otherwise => {
-                        // if the token is doubleable and it matches, use that instead
-                        if let Some(dbl) = otherwise.double_token() {
-                            let dblregex = dbl.regex(); // fixme: this may be expensive
-                            if dblregex.find(haystack).is_some() {
-                                ret = Some(Token {
-                                    ty: dbl,
-                                    start: self.pos,
-                                });
-                                break;
-                            }
-                        }
-                        Some(Token {
-                            ty: otherwise.clone(),
-                            start: self.pos,
-                        })
-                    }
-                };
-                break;
-            }
-        }
+        
 
         // by this point, if ret is None, we have an invalid token
         if let Some(token) = ret {
@@ -119,6 +79,16 @@ impl Lexer {
             let span = Span::from_coord(self.pos, 0, src.chars().count());
             Some(Err(LexerErr::UnknownToken { src, span }))
         }
+    }
+
+    /// Iterates over `tokenmap`. Once it finds a match, it calls `cb` to do more processing on it if needed.
+    /// If `cb` returns Some, the result is returned. Otherwise, it continues.
+    fn parse_single(&self, haystack: &str) -> Option<Token> {
+        for (tk, rgx) in self.regexes.iter() {
+            todo!()
+        }
+
+        None
     }
 
     fn strip_whitespace(&mut self) {
